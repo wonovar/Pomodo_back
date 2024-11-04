@@ -15,6 +15,7 @@ import android.graphics.Typeface
 import com.example.pomodo.R
 import java.util.Calendar
 
+
 class MainActivity : AppCompatActivity() {
 
     private lateinit var addTaskButton: TextView // + 버튼
@@ -22,6 +23,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var editButton: TextView // 편집 버튼
     private lateinit var calendarIcon: ImageView // 캘린더 아이콘
     private var isEditMode: Boolean = false // 편집 모드 여부를 저장하는 플래그 변수
+
+    private var selectedDate: String = "" // 선택된 날짜를 저장하는 변수
 
     private val tasksMap = mutableMapOf<String, MutableList<String>>() // 날짜별 할 일 저장
 
@@ -59,7 +62,7 @@ class MainActivity : AppCompatActivity() {
         val day = calendar.get(Calendar.DAY_OF_MONTH)
 
         val datePickerDialog = DatePickerDialog(this, { _, selectedYear, selectedMonth, selectedDay ->
-            val selectedDate = "$selectedYear-${selectedMonth + 1}-$selectedDay"
+            selectedDate = "$selectedYear-${selectedMonth + 1}-$selectedDay"
             loadPlannerData(selectedDate) // 선택된 날짜의 할 일 로드
         }, year, month, day)
 
@@ -68,13 +71,13 @@ class MainActivity : AppCompatActivity() {
 
     // 선택된 날짜에 따라 데이터를 불러오는 함수 (임시 데이터 표시)
     private fun loadPlannerData(selectedDate: String) {
-        taskContainer.removeAllViews() // 기존 항목 초기화
+        taskContainer.removeAllViews()
 
-        // 선택된 날짜의 할 일 로드
-        val tasks = tasksMap[selectedDate] ?: mutableListOf() // 해당 날짜에 할 일이 없으면 빈 리스트 사용
+        // 선택한 날짜의 데이터만 깊은 복사하여 새로운 리스트 생성
+        val tasks = tasksMap[selectedDate] ?: mutableListOf()
 
-        for (task in tasks) {
-            addNewTask(task) // 기존 할 일 추가
+        tasks.forEach { task ->
+            addNewTask(task)
         }
     }
 
@@ -142,8 +145,7 @@ class MainActivity : AppCompatActivity() {
         taskContainer.addView(taskLayout) // 전체 할 일 목록에 추가
 
         // 현재 날짜에 할 일을 추가
-        val currentDate = "${Calendar.getInstance().get(Calendar.YEAR)}-${Calendar.getInstance().get(Calendar.MONTH) + 1}-${Calendar.getInstance().get(Calendar.DAY_OF_MONTH)}" // 현재 날짜 가져오기
-        tasksMap.getOrPut(currentDate) { mutableListOf() }.add(taskName) // 현재 날짜에 할 일 추가
+
     }
 
     // 편집 모드 전환 함수
@@ -187,6 +189,12 @@ class MainActivity : AppCompatActivity() {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_task, null)
         val taskEditText = dialogView.findViewById<EditText>(R.id.editTaskName)
 
+        // 선택된 날짜가 비어있지 않은지 확인
+        if (selectedDate.isBlank()) {
+            // 선택된 날짜가 없는 경우 현재 날짜를 사용
+            selectedDate = "${Calendar.getInstance().get(Calendar.YEAR)}-${Calendar.getInstance().get(Calendar.MONTH) + 1}-${Calendar.getInstance().get(Calendar.DAY_OF_MONTH)}"
+        }
+
         // AlertDialog 생성 및 설정
         AlertDialog.Builder(this)
             .setTitle("새 할 일 추가")
@@ -194,6 +202,8 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton("확인") { dialog, _ ->
                 val taskName = taskEditText.text.toString()
                 if (taskName.isNotBlank()) {
+                    // 선택된 날짜에 새 할 일을 추가
+                    tasksMap.getOrPut(selectedDate) { mutableListOf() }.add(taskName)
                     addNewTask(taskName) // 입력된 제목으로 할 일 추가
                 }
                 dialog.dismiss()
